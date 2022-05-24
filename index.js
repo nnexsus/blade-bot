@@ -29,13 +29,13 @@ const commands = [
 const rest = new REST({version: '10'}).setToken(token)
 
 
-
+//global, takes an hour to register on npm start
 rest.put(Routes.applicationCommands(clientID), {body: commands}).then(() => {
     console.log('Commands registered globally.')
 }).catch(console.error)
 
 
-
+//guild-specific, instantly registers
 rest.put(Routes.applicationGuildCommands(clientID, guildID), {body: commands}).then(() => {
     console.log('Commands registered locally.')
 }).catch(console.error)
@@ -53,6 +53,8 @@ client.once('ready', () => {
     })
 })
 
+
+//there isnt too many commands, i found it easier just to keep it all in the index for now
 client.on("interactionCreate", async (interaction) => {
     if (!interaction.isCommand()) return;
 
