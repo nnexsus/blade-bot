@@ -11,11 +11,15 @@ const commands = [
     new SlashCommandBuilder().setName('player').setDescription("Gets player info.").addStringOption(option => option.setName('player-tag').setDescription('Ex: #8YQ9LC2QU').setRequired(true)),
     new SlashCommandBuilder().setName('goldpass').setDescription("Get gold pass end time."),
     new SlashCommandBuilder().setName('troops').setDescription('Sends a link to the fandom troop database.'),
-    new SlashCommandBuilder().setName('help').setDescription('Lists all commands and syntaxes.')
+    new SlashCommandBuilder().setName('help').setDescription('Lists all commands and syntaxes.'),
 ]
 
 const rest = new REST({version: '10'}).setToken(token)
 
+rest.put(Routes.applicationCommands(clientID), {body: commands}).then(() => {
+    console.log('Commands registered globally.')
+}).catch(console.error)
+
 rest.put(Routes.applicationGuildCommands(clientID, guildID), {body: commands}).then(() => {
-    console.log('Commands registered.')
+    console.log('Commands registered locally.')
 }).catch(console.error)
