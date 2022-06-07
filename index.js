@@ -2,7 +2,6 @@ const { token, key, clientID, guildID } = require('./config.json');
 const { Client, Intents, MessageAttachment, MessageEmbed, MessageButton } = require('discord.js');
 const { default: axios } = require('axios');
 const { Pagination } = require('pagination.djs');
-const db = require('./db.json');
 
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { REST } = require('@discordjs/rest');
