@@ -618,5 +618,6 @@ client.on("interactionCreate", async (interaction) => {
 
 })
 
+.listen(process.env.PORT || 5000)
 
 client.login(process.env.BOT_KEY);
