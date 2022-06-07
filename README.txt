@@ -6,7 +6,6 @@ Please note: the bot is not yet complete.
 Future updates:
     -Update feed that posts to update channel.
     -Event feed.
-    -Actual troop and building database.
     -Base links.
     -Other stuff probably.
 
