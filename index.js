@@ -2,6 +2,7 @@ const { token, key, clientID, guildID } = require('./config.json');
 const { Client, Intents, MessageAttachment, MessageEmbed, MessageButton } = require('discord.js');
 const { default: axios } = require('axios');
 const { Pagination } = require('pagination.djs');
+const db = require('./db.json');
 
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { REST } = require('@discordjs/rest');
@@ -20,8 +21,17 @@ const commands = [
     new SlashCommandBuilder().setName('currentwar').setDescription('Gets info on your clans current war.').addStringOption(option => option.setName('clan-tag').setDescription('Ex: #2QOB822JV').setRequired(true)),
     new SlashCommandBuilder().setName('player').setDescription("Gets player info.").addStringOption(option => option.setName('player-tag').setDescription('Ex: #8YQ9LC2QU').setRequired(true)),
     new SlashCommandBuilder().setName('goldpass').setDescription("Get gold pass end time."),
-    new SlashCommandBuilder().setName('troops').setDescription('Sends a link to the fandom troop database.'),
     new SlashCommandBuilder().setName('help').setDescription('Lists all commands and syntaxes.'),
+    new SlashCommandBuilder().setName('troops').setDescription('Sends info on all regular troops.'),
+    new SlashCommandBuilder().setName('troop').setDescription('Sends detailed info on a single troop.').addStringOption(option => option.setName('troop-name').setDescription('Ex: barbarian, babydragon').setRequired(true)),
+    new SlashCommandBuilder().setName('supertroops').setDescription('Sends a info on all super troops.'),
+    new SlashCommandBuilder().setName('super').setDescription('Sends detailed info on a super troop.').addStringOption(option => option.setName('super-troop-name').setDescription('Ex: superarcher, icehound').setRequired(true)),
+    new SlashCommandBuilder().setName('spells').setDescription('Sends info on all spells.'),
+    new SlashCommandBuilder().setName('spell').setDescription('Sends detailed info on a single spell.').addStringOption(option => option.setName('spell-name').setDescription('Ex: healingspell, skeletonspell').setRequired(true)),
+    new SlashCommandBuilder().setName('sieges').setDescription('Sends a info on all siege machines.'),
+    new SlashCommandBuilder().setName('siege').setDescription('Sends detailed info on a siege machine.').addStringOption(option => option.setName('siege-machine-name').setDescription('Ex: wallwrecker, siegebarracks').setRequired(true)),
+    new SlashCommandBuilder().setName('pets').setDescription('Sends a info on all pets.'),
+    new SlashCommandBuilder().setName('pet').setDescription('Sends detailed info on a pet.').addStringOption(option => option.setName('pet-name').setDescription('Ex: lassi, electroowl').setRequired(true)),
 ]
 
 
@@ -251,15 +261,9 @@ client.on("interactionCreate", async (interaction) => {
         })
 
         
-    } else if (interaction.commandName === 'troops') {
-            const embed = new MessageEmbed()
-            .setTitle(`Troop`)
-            .addField("Link to database: ", `https://clashofclans.fandom.com/wiki/Army`, true)
-            .setColor("ORANGE")
-        interaction.reply({embeds: [embed]})
-
-
     } else if (interaction.commandName === 'help') {
+        const pagination = new Pagination(interaction);
+        
         const embed = new MessageEmbed()
         .setTitle(`/help`)
         .setDescription('Commands:')
@@ -269,9 +273,348 @@ client.on("interactionCreate", async (interaction) => {
         .addField("/currentwar", '/currentwar [clan-tag] - Gets all your info on your clans current war. Clan tag can be found in /search.', true)
         .addField("/player", '/player [player-tag] - Gets all player info and troop levels. Player tag can be found in /clan by navigating.', true)
         .addField("/goldpass", '/goldpass - Gets end date of current season pass.', true)
-        .addField("/troops", '/troops - Sends a link to the Clash of Clans troop wiki database.', true)
         .setColor("PURPLE")
-    interaction.reply({embeds: [embed]})
+
+        const embedTwo = new MessageEmbed()
+        .setTitle(`/help`)
+        .setDescription('Commands:')
+        .addField("/troops", '/troops - Sends a message with details on all troops.', true)
+        .addField("/troop", '/troop [troop-name] - Sends detailed info on a troop.', true)
+        .addField("/supertroops", '/supertroops - Sends a message with details on all super troops.', true)
+        .addField("/super", '/super [super-troop-name] - Sends detailed info on a super troop.', true)
+        .addField("/sieges", '/sieges - Sends a message with details on all siege machines.', true)
+        .addField("/siege", '/siege [siege-machine-name] - Sends detailed info on a siege machine.', true)
+        .addField("/spells", '/spells - Sends a message with details on all spells.', true)
+        .addField("/spell", '/spell [spell-name] - Sends detailed info on a spell.', true)
+        .addField("/pets", '/pets - Sends a message with details on all pets.', true)
+        .addField("/pet", '/pet [pet-name] - Sends detailed info on a pet.', true)
+        .setColor("PURPLE")
+
+        const embedThree = new MessageEmbed()
+        .setTitle(`/help`)
+        .setDescription('Info:')
+        .addField("More info:", "Due to heroes having up to 80 levels; it is nos possible to create embeds for them, as 50 is the page limit on embeds. It would also be somewhat impractical.")
+        .addField("API", "All troop and army info is sourced from my api, which is free to use here: https://blade-api.netlify.app/")
+
+        var pages = [embed, embedTwo, embedThree]
+
+        pagination.setEmbeds(pages)
+        pagination.setAuthorizedUsers([])
+        pagination.render()
+
+    } else if (interaction.commandName === 'troops') {
+        const pagination = new Pagination(interaction);
+        var pages = []
+        const troops = await axios.get(`https://clash-database-api.herokuapp.com/api/troops`).then((response) => {
+            response.data.map((troop) => {
+                if (troop.housing > 0) {
+                    const embed = new MessageEmbed()
+                    .setTitle(`${troop.formalname}`)
+                    .setDescription(`Housing: ${troop.housing}, Move Speed: ${troop.movespeed}, Attack Speed: ${troop.attackspeed}`)
+                    .setColor("PURPLE")
+                    troop.levels.map((level) => {
+                        if (level.level === 1) {
+                            embed.setImage(`${level.img}`)
+                        }
+                        embed.addField('Level', `${level.level}`)
+                        embed.addField('DPS', `${level.dps}`, true)
+                        embed.addField('DPA', `${level.dpa}`, true)
+                        if (troop.spec != null) {
+                            console.log("spec")
+                            embed.addField(`${troop.spec}`, `${level.dpd}`, true)
+                        }
+                        embed.addField('HP', `${level.hp}`, true)
+                    })
+                    pages.push(embed)
+                }
+            })
+        }).catch((e) => {
+            console.log(e)
+        })
+        pagination.setEmbeds(pages)
+        pagination.setAuthorizedUsers([])
+        pagination.render()
+
+
+    } else if (interaction.commandName === 'troop') {
+        const pagination = new Pagination(interaction);
+        var pages = []
+        const troopname = await interaction.options.get('troop-name', true)
+        const troopnamestring = troopname.value.toString()
+        const troops = await axios.get(`https://clash-database-api.herokuapp.com/api/troop/${troopnamestring}`).then((response) => {
+                response.data.levels.map((level) => {
+                    const embed = new MessageEmbed()
+                    .setTitle(`${response.data.formalname}`)
+                    .setDescription(`Housing: ${response.data.housing}, Move Speed: ${response.data.movespeed}, Attack Speed: ${response.data.attackspeed}`)
+                    .setColor("PURPLE")
+                    embed.setImage(`${level.img}`)
+                    embed.addField('Level', `${level.level}`)
+                    embed.addField('DPS', `${level.dps}`, true)
+                    embed.addField('DPA', `${level.dpa}`, true)
+                    if (response.data.spec != null) {
+                        console.log("spec")
+                        embed.addField(`${response.data.spec}`, `${level.dpd}`, true)
+                    }
+                    embed.addField('HP', `${level.hp}`, true)
+                    pages.push(embed)
+                })  
+            }).catch((e) => {
+                console.log(e)
+            })
+            pagination.setEmbeds(pages)
+            pagination.setAuthorizedUsers([])
+            pagination.render()
+
+
+    } else if (interaction.commandName === 'spells') {
+        const pagination = new Pagination(interaction);
+        var pages = []
+        const troops = await axios.get(`https://clash-database-api.herokuapp.com/api/spells`).then((response) => {
+            response.data.map((troop) => {
+                if (troop.housing > 0) {
+                    const embed = new MessageEmbed()
+                    .setTitle(`${troop.formalname}`)
+                    .setColor("PURPLE")
+                    embed.setImage(`${troop.image}`)
+                    troop.levels.map((level) => {
+                        embed.addField('Level', `${level.level}`)
+                        embed.addField('DPS', `${level.dps}`, true)
+                        embed.addField('DPA', `${level.dpa}`, true)
+                        if (troop.spec != null) {
+                            console.log("spec")
+                            embed.addField(`${troop.spec}`, `${level.dpd}`, true)
+                        }
+                        embed.addField('HP', `${level.hp}`, true)
+                    })
+                    pages.push(embed)
+                }
+            })
+        }).catch((e) => {
+            console.log(e)
+        })
+        pagination.setEmbeds(pages)
+        pagination.setAuthorizedUsers([])
+        pagination.render()
+
+
+    } else if (interaction.commandName === 'spell') {
+        const pagination = new Pagination(interaction);
+        var pages = []
+        const troopname = await interaction.options.get('spell-name', true)
+        const troopnamestring = troopname.value.toString()
+        const troops = await axios.get(`https://clash-database-api.herokuapp.com/api/spell/${troopnamestring}`).then((response) => {
+                response.data.levels.map((level) => {
+                    const embed = new MessageEmbed()
+                    .setTitle(`${response.data.formalname}`)
+                    .setColor("PURPLE")
+                    embed.setImage(`${response.data.image}`)
+                    embed.addField('Level', `${level.level}`)
+                    if (response.data.spec != null) {
+                        console.log("spec")
+                        embed.addField(`${response.data.spec}`, `${level.dpd}`, true)
+                    }
+                    pages.push(embed)
+                })  
+            }).catch((e) => {
+                console.log(e)
+            })
+            pagination.setEmbeds(pages)
+            pagination.setAuthorizedUsers([])
+            pagination.render()
+
+
+    } else if (interaction.commandName === 'pets') {
+        const pagination = new Pagination(interaction);
+        var pages = []
+        const troops = await axios.get(`https://clash-database-api.herokuapp.com/api/pets`).then((response) => {
+            response.data.map((troop) => {
+                if (troop.housing > 0) {
+                    const embed = new MessageEmbed()
+                    .setTitle(`${troop.formalname}`)
+                    .setDescription(`Housing: ${troop.housing}, Move Speed: ${troop.movespeed}, Attack Speed: ${troop.attackspeed}`)
+                    .setColor("PURPLE")
+                    .addField(`${troop.ability}`, `${troop.abilityStats}`)
+                    embed.setImage(`${troop.img}`)
+                    troop.levels.map((level) => {
+                        embed.addField('Level', `${level.level}`)
+                        embed.addField('DPS', `${level.dps}`, true)
+                        embed.addField('DPA', `${level.dpa}`, true)
+                        if (troop.spec != null) {
+                            console.log("spec")
+                            embed.addField(`${troop.spec}`, `${level.dpd}`, true)
+                        }
+                        embed.addField('HP', `${level.hp}`, true)
+                    })
+                    pages.push(embed)
+                }
+            })
+        }).catch((e) => {
+            console.log(e)
+        })
+        pagination.setEmbeds(pages)
+        pagination.setAuthorizedUsers([])
+        pagination.render()
+
+
+    } else if (interaction.commandName === 'pet') {
+        const pagination = new Pagination(interaction);
+        var pages = []
+        const troopname = await interaction.options.get('pet-name', true)
+        const troopnamestring = troopname.value.toString()
+        const troops = await axios.get(`https://clash-database-api.herokuapp.com/api/pet/${troopnamestring}`).then((response) => {
+                response.data.levels.map((level) => {
+                    const embed = new MessageEmbed()
+                    .setTitle(`${response.data.formalname}`)
+                    .setDescription(`Housing: ${response.data.housing}, Move Speed: ${response.data.movespeed}, Attack Speed: ${response.data.attackspeed}`)
+                    .setColor("PURPLE")
+                    .addField(`${response.data.ability}`, `${response.data.abilityStats}`)
+                    embed.setImage(`${response.data.img}`)
+                    embed.addField('Level', `${level.level}`)
+                    embed.addField('DPS', `${level.dps}`, true)
+                    embed.addField('DPA', `${level.dpa}`, true)
+                    if (response.data.spec != null) {
+                        console.log("spec")
+                        embed.addField(`${response.data.spec}`, `${level.dpd}`, true)
+                    }
+                    embed.addField('HP', `${level.hp}`, true)
+                    pages.push(embed)
+                })  
+            }).catch((e) => {
+                console.log(e)
+            })
+            pagination.setEmbeds(pages)
+            pagination.setAuthorizedUsers([])
+            pagination.render()
+
+
+    }  else if (interaction.commandName === 'sieges') {
+        const pagination = new Pagination(interaction);
+        var pages = []
+        const troops = await axios.get(`https://clash-database-api.herokuapp.com/api/sieges`).then((response) => {
+            response.data.map((troop) => {
+                if (troop.housing > 0) {
+                    const embed = new MessageEmbed()
+                    .setTitle(`${troop.formalname}`)
+                    .setDescription(`Housing: ${troop.housing}, Move Speed: ${troop.movespeed}, Attack Speed: ${troop.attackspeed}`)
+                    .setColor("PURPLE")
+                    .addField(`${troop.ability}`, `${troop.abilityStats}`)
+                    troop.levels.map((level) => {
+                        if (level.level === 4) {
+                            embed.setImage(`${level.img}`)
+                        }
+                        embed.addField('Level', `${level.level}`)
+                        embed.addField('DPS', `${level.dps}`, true)
+                        embed.addField('DPA', `${level.dpa}`, true)
+                        if (troop.spec != null) {
+                            console.log("spec")
+                            embed.addField(`${troop.spec}`, `${level.dpd}`, true)
+                        }
+                        embed.addField('HP', `${level.hp}`, true)
+                    })
+                    pages.push(embed)
+                }
+            })
+        }).catch((e) => {
+            console.log(e)
+        })
+        pagination.setEmbeds(pages)
+        pagination.setAuthorizedUsers([])
+        pagination.render()
+
+
+    } else if (interaction.commandName === 'siege') {
+        const pagination = new Pagination(interaction);
+        var pages = []
+        const troopname = await interaction.options.get('siege-machine-name', true)
+        const troopnamestring = troopname.value.toString()
+        const troops = await axios.get(`https://clash-database-api.herokuapp.com/api/siege/${troopnamestring}`).then((response) => {
+                response.data.levels.map((level) => {
+                    const embed = new MessageEmbed()
+                    .setTitle(`${response.data.formalname}`)
+                    .setDescription(`Housing: ${response.data.housing}, Move Speed: ${response.data.movespeed}, Attack Speed: ${response.data.attackspeed}`)
+                    .setColor("PURPLE")
+                    .addField(`${troop.ability}`, `${troop.abilityStats}`)
+                    embed.setImage(`${level.img}`)
+                    embed.addField('Level', `${level.level}`)
+                    embed.addField('DPS', `${level.dps}`, true)
+                    embed.addField('DPA', `${level.dpa}`, true)
+                    if (response.data.spec != null) {
+                        console.log("spec")
+                        embed.addField(`${response.data.spec}`, `${level.dpd}`, true)
+                    }
+                    embed.addField('HP', `${level.hp}`, true)
+                    pages.push(embed)
+                })  
+            }).catch((e) => {
+                console.log(e)
+            })
+            pagination.setEmbeds(pages)
+            pagination.setAuthorizedUsers([])
+            pagination.render()
+
+
+    }  else if (interaction.commandName === 'supertroops') {
+        const pagination = new Pagination(interaction);
+        var pages = []
+        const troops = await axios.get(`https://clash-database-api.herokuapp.com/api/supers`).then((response) => {
+            response.data.map((troop) => {
+                if (troop.housing > 0) {
+                    const embed = new MessageEmbed()
+                    .setTitle(`${troop.formalname}`)
+                    .setDescription(`Housing: ${troop.housing}, Move Speed: ${troop.movespeed}, Attack Speed: ${troop.attackspeed}`)
+                    .setColor("PURPLE")
+                    .addField(`${troop.ability}`, `${troop.abilityStats}`)
+                    embed.setImage(`${troop.img}`)
+                    troop.levels.map((level) => {
+                        embed.addField('Level', `${level.level}`)
+                        embed.addField('DPS', `${level.dps}`, true)
+                        embed.addField('DPA', `${level.dpa}`, true)
+                        if (troop.spec != null) {
+                            console.log("spec")
+                            embed.addField(`${troop.spec}`, `${level.dpd}`, true)
+                        }
+                        embed.addField('HP', `${level.hp}`, true)
+                    })
+                    pages.push(embed)
+                }
+            })
+        }).catch((e) => {
+            console.log(e)
+        })
+        pagination.setEmbeds(pages)
+        pagination.setAuthorizedUsers([])
+        pagination.render()
+
+
+    } else if (interaction.commandName === 'super') {
+        const pagination = new Pagination(interaction);
+        var pages = []
+        const troopname = await interaction.options.get('super-troop-name', true)
+        const troopnamestring = troopname.value.toString()
+        const troops = await axios.get(`https://clash-database-api.herokuapp.com/api/super/${troopnamestring}`).then((response) => {
+                response.data.levels.map((level) => {
+                    const embed = new MessageEmbed()
+                    .setTitle(`${response.data.formalname}`)
+                    .setDescription(`Housing: ${response.data.housing}, Move Speed: ${response.data.movespeed}, Attack Speed: ${response.data.attackspeed}`)
+                    .setColor("PURPLE")
+                    .addField(`${troop.ability}`, `${troop.abilityStats}`)
+                    embed.setImage(`${troop.img}`)
+                    embed.addField('Level', `${level.level}`)
+                    embed.addField('DPS', `${level.dps}`, true)
+                    embed.addField('DPA', `${level.dpa}`, true)
+                    if (response.data.spec != null) {
+                        console.log("spec")
+                        embed.addField(`${response.data.spec}`, `${level.dpd}`, true)
+                    }
+                    embed.addField('HP', `${level.hp}`, true)
+                    pages.push(embed)
+                })  
+            }).catch((e) => {
+                console.log(e)
+            })
+            pagination.setEmbeds(pages)
+            pagination.setAuthorizedUsers([])
+            pagination.render()
     }
 
 })
