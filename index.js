@@ -1,12 +1,12 @@
-const { token, key, clientID, guildID } = require('./config.json');
+const { clientID, guildID } = require('./config.json');
 const { Client, Intents, MessageAttachment, MessageEmbed, MessageButton } = require('discord.js');
 const { default: axios } = require('axios');
 const { Pagination } = require('pagination.djs');
 
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { REST } = require('@discordjs/rest');
-const { Routes } = require('discord-api-types/v10')
-
+const { Routes } = require('discord-api-types/v10');
+const dotenv = require('dotenv');
 
 
 const client = new Client({intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES]})
@@ -33,9 +33,9 @@ const commands = [
     new SlashCommandBuilder().setName('pet').setDescription('Sends detailed info on a pet.').addStringOption(option => option.setName('pet-name').setDescription('Ex: lassi, electroowl').setRequired(true)),
 ]
 
+dotenv.config()
 
-
-const rest = new REST({version: '10'}).setToken(token)
+const rest = new REST({version: '10'}).setToken(process.env.BOT_KEY)
 
 
 //global, takes an hour to register on npm start
@@ -74,7 +74,7 @@ client.on("interactionCreate", async (interaction) => {
 
         const clan = await interaction.options.get('clan-name', true)
         const clanname = clan.value.toString()
-        const res = await axios.get(`https://api.clashofclans.com/v1/clans?name=${clanname}`, {headers: {Authorization: `Bearer ${key}`}}).then((response) => {
+        const res = await axios.get(`https://api.clashofclans.com/v1/clans?name=${clanname}`, {headers: {Authorization: `Bearer ${process.env.CLASH_KEY}`}}).then((response) => {
             response.data.items.map((dat) => {
                 console.log(dat)
                 const embed = new MessageEmbed()
@@ -102,7 +102,7 @@ client.on("interactionCreate", async (interaction) => {
 
         const clan = await interaction.options.get('clan-tag', true)
         const clantag = clan.value.toString()
-        const res = await axios.get(`https://api.clashofclans.com/v1/clans/%23${clantag}`, {headers: {Authorization: `Bearer ${key}`}}).then((response) => {
+        const res = await axios.get(`https://api.clashofclans.com/v1/clans/%23${clantag}`, {headers: {Authorization: `Bearer ${process.env.CLASH_KEY}`}}).then((response) => {
             const embedOne = new MessageEmbed()
             .setTitle(`${response.data.name} ${response.data.tag}`)
             .setDescription(`${response.data.type}`)
@@ -144,7 +144,7 @@ client.on("interactionCreate", async (interaction) => {
 
         const clan = await interaction.options.get('clan-tag', true)
         const clantag = clan.value.toString()
-        const res = await axios.get(`https://api.clashofclans.com/v1/clans/%23${clantag}/warlog?limit=25`, {headers: {Authorization: `Bearer ${key}`}}).then((response) => {
+        const res = await axios.get(`https://api.clashofclans.com/v1/clans/%23${clantag}/warlog?limit=25`, {headers: {Authorization: `Bearer ${process.env.CLASH_KEY}`}}).then((response) => {
             response.data.items.map((dat) => {
                 console.log(dat)
                 const embed = new MessageEmbed()
@@ -177,7 +177,7 @@ client.on("interactionCreate", async (interaction) => {
 
         const clan = await interaction.options.get('clan-tag', true)
         const clantag = clan.value.toString()
-        const res = await axios.get(`https://api.clashofclans.com/v1/clans/%23${clantag}/currentwar`, {headers: {Authorization: `Bearer ${key}`}}).then((response) => {
+        const res = await axios.get(`https://api.clashofclans.com/v1/clans/%23${clantag}/currentwar`, {headers: {Authorization: `Bearer ${process.env.CLASH_KEY}`}}).then((response) => {
                 const dat = response.data
                 const embed = new MessageEmbed()
                 .setTitle(`${dat.clan.name} ${dat.clan.tag} -V- ${dat.opponent.name} ${dat.opponent.tag}`)
@@ -207,7 +207,7 @@ client.on("interactionCreate", async (interaction) => {
 
         const clan = await interaction.options.get('player-tag', true)
         const clantag = clan.value.toString()
-        const res = await axios.get(`https://api.clashofclans.com/v1/players/%23${clantag}`, {headers: {Authorization: `Bearer ${key}`}}).then((response) => {
+        const res = await axios.get(`https://api.clashofclans.com/v1/players/%23${clantag}`, {headers: {Authorization: `Bearer ${process.env.CLASH_KEY}`}}).then((response) => {
                 const dat = response.data
                 const embed = new MessageEmbed()
                 .setTitle(`${dat.name} ${dat.tag}`)
@@ -245,7 +245,7 @@ client.on("interactionCreate", async (interaction) => {
 
         
     } else if (interaction.commandName === 'goldpass') {
-        const res = await axios.get(`https://api.clashofclans.com/v1/goldpass/seasons/current`, {headers: {Authorization: `Bearer ${key}`}}).then((response) => {
+        const res = await axios.get(`https://api.clashofclans.com/v1/goldpass/seasons/current`, {headers: {Authorization: `Bearer ${process.env.CLASH_KEY}`}}).then((response) => {
                 const dat = response.data
                 const endtime = (dat.startTime).split("T")[0]
                 const embed = new MessageEmbed()
@@ -619,4 +619,4 @@ client.on("interactionCreate", async (interaction) => {
 })
 
 
-client.login(token);
+client.login(process.env.BOT_KEY);
